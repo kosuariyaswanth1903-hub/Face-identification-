@@ -1,69 +1,64 @@
 const video = document.getElementById("video")
+const result = document.getElementById("result")
 
 Promise.all([
-  faceapi.nets.tinyFaceDetector.loadFromUri("Models"),
-  faceapi.nets.faceLandmark68Net.loadFromUri("Models"),
-  faceapi.nets.faceRecognitionNet.loadFromUri("Models"),
-  faceapi.nets.ssdMobilenetv1.loadFromUri("Models")
-]).then(startVideo)
+faceapi.nets.tinyFaceDetector.loadFromUri('Models'),
+faceapi.nets.faceLandmark68Net.loadFromUri('Models'),
+faceapi.nets.faceRecognitionNet.loadFromUri('Models')
+]).then(startCamera)
 
-function startVideo() {
-  navigator.mediaDevices.getUserMedia({ video: {} })
-    .then(stream => video.srcObject = stream)
-    .catch(err => console.error(err))
+function startCamera(){
+navigator.mediaDevices.getUserMedia({video:{}})
+.then(stream => {
+video.srcObject = stream
+})
+.catch(err => {
+result.innerText = "Camera permission denied"
+})
 }
 
-async function loadLabeledImages() {
-  const labels = ["yash", "nikhil", "charan"]
+async function loadStudents(){
 
-  return Promise.all(
-    labels.map(async label => {
-      const img = await faceapi.fetchImage(`students/${label}.jpg`)
-      const detections = await faceapi
-        .detectSingleFace(img)
-        .withFaceLandmarks()
-        .withFaceDescriptor()
+const labels = ['yash','nikhil','charan']
 
-      const descriptions = []
-      descriptions.push(detections.descriptor)
+return Promise.all(
+labels.map(async label => {
 
-      return new faceapi.LabeledFaceDescriptors(label, descriptions)
-    })
-  )
+const img = await faceapi.fetchImage(`students/${label}.jpg`)
+const detections = await faceapi
+.detectSingleFace(img)
+.withFaceLandmarks()
+.withFaceDescriptor()
+
+return new faceapi.LabeledFaceDescriptors(label,[detections.descriptor])
+})
+)
 }
 
 video.addEventListener("play", async () => {
 
-  const labeledFaceDescriptors = await loadLabeledImages()
-  const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors)
+const labeledDescriptors = await loadStudents()
+const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors,0.6)
 
-  const canvas = faceapi.createCanvasFromMedia(video)
-  document.body.append(canvas)
+setInterval(async () => {
 
-  const displaySize = { width: video.width, height: video.height }
-  faceapi.matchDimensions(canvas, displaySize)
+const detections = await faceapi
+.detectAllFaces(video,new faceapi.TinyFaceDetectorOptions())
+.withFaceLandmarks()
+.withFaceDescriptors()
 
-  setInterval(async () => {
+if(detections.length>0){
 
-    const detections = await faceapi
-      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-      .withFaceLandmarks()
-      .withFaceDescriptors()
+const bestMatch = faceMatcher.findBestMatch(detections[0].descriptor)
 
-    const resizedDetections = faceapi.resizeResults(detections, displaySize)
+if(bestMatch.label !== "unknown"){
+result.innerText = bestMatch.label + " belongs to DCME-B"
+}else{
+result.innerText = "Face not recognised"
+}
 
-    const results = resizedDetections.map(d =>
-      faceMatcher.findBestMatch(d.descriptor)
-    )
+}
 
-    canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height)
-
-    results.forEach((result, i) => {
-      const box = resizedDetections[i].detection.box
-      const drawBox = new faceapi.draw.DrawBox(box, { label: result.toString() })
-      drawBox.draw(canvas)
-    })
-
-  }, 100)
+},1000)
 
 })
