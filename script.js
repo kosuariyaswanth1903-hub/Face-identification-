@@ -1,85 +1,86 @@
-const video = document.getElementById("video");
-const result = document.getElementById("result");
+const video = document.getElementById("video")
+const result = document.getElementById("result")
 
 // START CAMERA
 navigator.mediaDevices.getUserMedia({ video: true })
 .then(stream => {
-    video.srcObject = stream;
-    result.innerText = "Camera active. Loading models...";
+video.srcObject = stream
+result.innerText = "Camera active. Loading models..."
 })
 .catch(() => {
-    result.innerText = "Camera permission denied.";
-});
+result.innerText = "Camera permission denied"
+})
 
-// LOAD MODELS FROM CDN (fixes GitHub Pages issue)
-const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+// MODEL CDN
+const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/model"
 
+// LOAD MODELS
 Promise.all([
-    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-]).then(() => {
-    result.innerText = "Models loaded. Loading student faces...";
-    startRecognition();
-}).catch((err) => {
-    console.error("Model loading failed:", err);
-    result.innerText = "Failed to load models.";
-});
+faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+]).then(startRecognition)
 
-async function startRecognition() {
+async function startRecognition(){
 
-    const labels = ['yash', 'nikhil', 'charan'];
-    const labeledDescriptors = [];
+result.innerText = "Models loaded. Loading student faces..."
 
-    for (const label of labels) {
-        try {
-            const img = await faceapi.fetchImage(`students/${label}.jpg`);
-            const detection = await faceapi
-                .detectSingleFace(img)
-                .withFaceLandmarks()
-                .withFaceDescriptor();
+const labels = ['yash','nikhil','charan']
+const labeledDescriptors = []
 
-            if (!detection) {
-                console.warn(`No face found for: ${label}`);
-                continue;
-            }
+for(const label of labels){
 
-            labeledDescriptors.push(
-                new faceapi.LabeledFaceDescriptors(label, [detection.descriptor])
-            );
-            console.log(`✅ Loaded: ${label}`);
+const img = await faceapi.fetchImage(`students/${label}.jpg`)
 
-        } catch (err) {
-            console.error(`Error loading ${label}:`, err);
-        }
-    }
+const detection = await faceapi
+.detectSingleFace(img)
+.withFaceLandmarks()
+.withFaceDescriptor()
 
-    if (labeledDescriptors.length === 0) {
-        result.innerText = "No student faces loaded. Check students folder.";
-        return;
-    }
+if(detection){
 
-    const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
-    result.innerText = "Ready! Point your face at the camera...";
+labeledDescriptors.push(
+new faceapi.LabeledFaceDescriptors(label,[detection.descriptor])
+)
 
-    setInterval(async () => {
-        if (video.readyState < 2) return;
+}
 
-        const detections = await faceapi
-            .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-            .withFaceLandmarks()
-            .withFaceDescriptors();
+}
 
-        if (detections.length > 0) {
-            const match = faceMatcher.findBestMatch(detections[0].descriptor);
-            if (match.label !== "unknown") {
-                result.innerText = `✅ ${match.label} belongs to DCME-B`;
-            } else {
-                result.innerText = "❌ Face not recognised";
-            }
-        } else {
-            result.innerText = "👀 No face detected - look at the camera";
-        }
+if(labeledDescriptors.length === 0){
+result.innerText = "No student faces found"
+return
+}
 
-    }, 1000);
+const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors,0.6)
+
+result.innerText = "Ready! Look at the camera"
+
+setInterval(async ()=>{
+
+if(video.readyState < 2) return
+
+const detections = await faceapi
+.detectAllFaces(video,new faceapi.TinyFaceDetectorOptions())
+.withFaceLandmarks()
+.withFaceDescriptors()
+
+if(detections.length > 0){
+
+const match = faceMatcher.findBestMatch(detections[0].descriptor)
+
+if(match.label !== "unknown"){
+result.innerText = "✅ " + match.label + " belongs to DCME-B"
+}else{
+result.innerText = "❌ Face not recognised"
+}
+
+}else{
+
+result.innerText = "No face detected"
+
+}
+
+},1000)
+
 }
