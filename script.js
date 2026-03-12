@@ -1,63 +1,65 @@
 const video = document.getElementById("video")
 const result = document.getElementById("result")
 
-navigator.mediaDevices.getUserMedia({video:true})
-.then(stream=>{
-video.srcObject=stream
-result.innerText="Camera active. Loading models..."
-})
+async function start() {
 
-Promise.all([
-faceapi.nets.tinyFaceDetector.loadFromUri('Models'),
-faceapi.nets.faceLandmark68Net.loadFromUri('Models'),
-faceapi.nets.faceRecognitionNet.loadFromUri('Models')
-]).then(start)
+result.innerText = "Loading models..."
 
-async function start(){
+await faceapi.nets.tinyFaceDetector.loadFromUri('Models')
+await faceapi.nets.faceLandmark68Net.loadFromUri('Models')
+await faceapi.nets.faceRecognitionNet.loadFromUri('Models')
 
-result.innerText="Models loaded. Loading student faces..."
+result.innerText = "Models loaded. Starting camera..."
 
-const labels=['yash','nikhil','charan']
-const descriptors=[]
+const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+video.srcObject = stream
 
-for(const label of labels){
+video.addEventListener("play", async () => {
 
-const img=await faceapi.fetchImage(`students/${label}.jpg`)
+const labels = ["yash","nikhil","charan"]
 
-const detection=await faceapi
+const labeledDescriptors = await Promise.all(
+labels.map(async label => {
+
+const img = await faceapi.fetchImage(`students/${label}.jpg`)
+
+const detections = await faceapi
 .detectSingleFace(img)
 .withFaceLandmarks()
 .withFaceDescriptor()
 
-descriptors.push(
-new faceapi.LabeledFaceDescriptors(label,[detection.descriptor])
+return new faceapi.LabeledFaceDescriptors(label,[detections.descriptor])
+
+})
 )
 
-}
+const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors,0.6)
 
-const matcher=new faceapi.FaceMatcher(descriptors)
+setInterval(async () => {
 
-result.innerText="Ready! Look at camera"
-
-setInterval(async()=>{
-
-const detections=await faceapi
+const detections = await faceapi
 .detectAllFaces(video,new faceapi.TinyFaceDetectorOptions())
 .withFaceLandmarks()
 .withFaceDescriptors()
 
-if(detections.length>0){
-
-const match=matcher.findBestMatch(detections[0].descriptor)
-
-if(match.label!=="unknown"){
-result.innerText=match.label+" belongs to DCME-B"
-}else{
-result.innerText="Face not recognised"
+if(detections.length === 0){
+result.innerText = "No face detected"
+return
 }
 
+const match = faceMatcher.findBestMatch(detections[0].descriptor)
+
+if(match.label === "unknown"){
+result.innerText = "Face not recognised"
+}
+else{
+result.innerText = "Detected: " + match.label
 }
 
 },1000)
 
+})
+
 }
+
+start()
