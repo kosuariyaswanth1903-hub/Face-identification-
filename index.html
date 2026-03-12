@@ -4,24 +4,34 @@
 <meta charset="UTF-8">
 <title>DCME-B Face Identification</title>
 
-<script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
-<script defer src="script.js"></script>
-
 <style>
-body{
-text-align:center;
-font-family:Arial;
+body {
+    text-align: center;
+    font-family: Arial;
+    background-color: #f0f0f0;
 }
 
-video{
-border:3px solid black;
-margin-top:20px;
+h2 {
+    margin-top: 20px;
+    color: #333;
 }
 
-#result{
-margin-top:20px;
-font-size:22px;
-font-weight:bold;
+video {
+    border: 3px solid black;
+    margin-top: 20px;
+    border-radius: 8px;
+}
+
+#result {
+    margin-top: 20px;
+    font-size: 22px;
+    font-weight: bold;
+    color: #222;
+    padding: 10px;
+    background: #fff;
+    display: inline-block;
+    border-radius: 8px;
+    min-width: 300px;
 }
 </style>
 
@@ -33,7 +43,12 @@ font-weight:bold;
 
 <video id="video" width="720" height="560" autoplay muted></video>
 
+<br>
 <h3 id="result">Waiting for camera...</h3>
+
+<!-- Scripts at bottom, NO defer -->
+<script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+<script src="script.js"></script>
 
 </body>
 </html>
