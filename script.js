@@ -1,83 +1,60 @@
 const video = document.getElementById("video")
 const result = document.getElementById("result")
 
-// START CAMERA
-navigator.mediaDevices.getUserMedia({ video: true })
-.then(stream => {
-video.srcObject = stream
-result.innerText = "Camera active. Loading models..."
-})
-.catch(() => {
-result.innerText = "Camera permission denied"
+navigator.mediaDevices.getUserMedia({video:true})
+.then(stream=>{
+video.srcObject=stream
+result.innerText="Camera active. Loading models..."
 })
 
-// MODEL CDN
-const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/model"
-
-// LOAD MODELS
 Promise.all([
-faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-]).then(startRecognition)
+faceapi.nets.tinyFaceDetector.loadFromUri('Models'),
+faceapi.nets.faceLandmark68Net.loadFromUri('Models'),
+faceapi.nets.faceRecognitionNet.loadFromUri('Models')
+]).then(start)
 
-async function startRecognition(){
+async function start(){
 
-result.innerText = "Models loaded. Loading student faces..."
+result.innerText="Models loaded. Loading student faces..."
 
-const labels = ['yash','nikhil','charan']
-const labeledDescriptors = []
+const labels=['yash','nikhil','charan']
+const descriptors=[]
 
 for(const label of labels){
 
-const img = await faceapi.fetchImage(`students/${label}.jpg`)
+const img=await faceapi.fetchImage(`students/${label}.jpg`)
 
-const detection = await faceapi
+const detection=await faceapi
 .detectSingleFace(img)
 .withFaceLandmarks()
 .withFaceDescriptor()
 
-if(detection){
-
-labeledDescriptors.push(
+descriptors.push(
 new faceapi.LabeledFaceDescriptors(label,[detection.descriptor])
 )
 
 }
 
-}
+const matcher=new faceapi.FaceMatcher(descriptors)
 
-if(labeledDescriptors.length === 0){
-result.innerText = "No student faces found"
-return
-}
+result.innerText="Ready! Look at camera"
 
-const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors,0.6)
+setInterval(async()=>{
 
-result.innerText = "Ready! Look at the camera"
-
-setInterval(async ()=>{
-
-if(video.readyState < 2) return
-
-const detections = await faceapi
+const detections=await faceapi
 .detectAllFaces(video,new faceapi.TinyFaceDetectorOptions())
 .withFaceLandmarks()
 .withFaceDescriptors()
 
-if(detections.length > 0){
+if(detections.length>0){
 
-const match = faceMatcher.findBestMatch(detections[0].descriptor)
+const match=matcher.findBestMatch(detections[0].descriptor)
 
-if(match.label !== "unknown"){
-result.innerText = "✅ " + match.label + " belongs to DCME-B"
+if(match.label!=="unknown"){
+result.innerText=match.label+" belongs to DCME-B"
 }else{
-result.innerText = "❌ Face not recognised"
+result.innerText="Face not recognised"
 }
-
-}else{
-
-result.innerText = "No face detected"
 
 }
 
