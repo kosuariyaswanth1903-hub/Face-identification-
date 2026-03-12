@@ -1,65 +1,72 @@
-const video = document.getElementById("video")
-const result = document.getElementById("result")
+const video = document.getElementById("video");
+const result = document.getElementById("result");
 
-async function start() {
-
-result.innerText = "Loading models..."
-
-await faceapi.nets.tinyFaceDetector.loadFromUri('Models')
-await faceapi.nets.faceLandmark68Net.loadFromUri('Models')
-await faceapi.nets.faceRecognitionNet.loadFromUri('Models')
-
-result.innerText = "Models loaded. Starting camera..."
-
-const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-video.srcObject = stream
-
-video.addEventListener("play", async () => {
-
-const labels = ["yash","nikhil","charan"]
-
-const labeledDescriptors = await Promise.all(
-labels.map(async label => {
-
-const img = await faceapi.fetchImage(`students/${label}.jpg`)
-
-const detections = await faceapi
-.detectSingleFace(img)
-.withFaceLandmarks()
-.withFaceDescriptor()
-
-return new faceapi.LabeledFaceDescriptors(label,[detections.descriptor])
-
+// START CAMERA
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => {
+    video.srcObject = stream;
 })
-)
+.catch(() => {
+    result.innerText = "Camera permission denied";
+});
 
-const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors,0.6)
+// LOAD MODELS
+Promise.all([
+    faceapi.nets.tinyFaceDetector.loadFromUri("Models"),
+    faceapi.nets.faceLandmark68Net.loadFromUri("Models"),
+    faceapi.nets.faceRecognitionNet.loadFromUri("Models")
+]).then(startRecognition);
 
-setInterval(async () => {
+async function startRecognition() {
 
-const detections = await faceapi
-.detectAllFaces(video,new faceapi.TinyFaceDetectorOptions())
-.withFaceLandmarks()
-.withFaceDescriptors()
+    result.innerText = "Loading student faces...";
 
-if(detections.length === 0){
-result.innerText = "No face detected"
-return
+    const labels = ["yash","nikhil","charan"];
+    const labeledDescriptors = [];
+
+    for (const label of labels) {
+
+        const img = await faceapi.fetchImage(`students/${label}.jpg`);
+
+        const detection = await faceapi
+        .detectSingleFace(img)
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+        if (!detection) {
+            console.log("No face found in", label);
+            continue;
+        }
+
+        labeledDescriptors.push(
+            new faceapi.LabeledFaceDescriptors(label,[detection.descriptor])
+        );
+    }
+
+    const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors,0.6);
+
+    result.innerText = "System ready. Look at the camera.";
+
+    setInterval(async () => {
+
+        const detections = await faceapi
+        .detectAllFaces(video,new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks()
+        .withFaceDescriptors();
+
+        if(detections.length>0){
+
+            const match = faceMatcher.findBestMatch(detections[0].descriptor);
+
+            if(match.label !== "unknown"){
+                result.innerText = "✅ "+match.label+" belongs to DCME-B";
+            }else{
+                result.innerText = "❌ Face not recognised";
+            }
+
+        }else{
+            result.innerText = "👀 No face detected";
+        }
+
+    },1000);
 }
-
-const match = faceMatcher.findBestMatch(detections[0].descriptor)
-
-if(match.label === "unknown"){
-result.innerText = "Face not recognised"
-}
-else{
-result.innerText = "Detected: " + match.label
-}
-
-},1000)
-
-})
-
-}
-
-start()
