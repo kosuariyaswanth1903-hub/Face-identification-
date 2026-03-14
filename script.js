@@ -1,6 +1,9 @@
-  const video = document.getElementById("video");
+const video = document.getElementById("video");
 const result = document.getElementById("result");
 const canvas = document.getElementById("overlay");
+
+// ✅ Load models from CDN — no need to host model files yourself!
+const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model";
 
 // START CAMERA
 async function startCamera() {
@@ -8,7 +11,6 @@ async function startCamera() {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream;
 
-        // ✅ FIX: await metadata so videoWidth/videoHeight are ready
         await new Promise(resolve => {
             video.onloadedmetadata = () => {
                 video.play();
@@ -16,22 +18,25 @@ async function startCamera() {
             };
         });
 
-        result.innerText = "Camera started. Loading models...";
+        result.innerText = "✅ Camera ready. Loading models...";
     } catch (err) {
         result.innerText = "❌ Camera permission denied";
         console.error(err);
     }
 }
 
-// LOAD MODELS
+// LOAD MODELS FROM CDN
 async function loadModels() {
-    await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri("./Models"),
-        faceapi.nets.faceLandmark68Net.loadFromUri("./Models"),
-        faceapi.nets.faceRecognitionNet.loadFromUri("./Models")
-    ]);
+    result.innerText = "⏳ Loading model 1/3...";
+    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
 
-    result.innerText = "Models loaded. Loading student faces...";
+    result.innerText = "⏳ Loading model 2/3...";
+    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+
+    result.innerText = "⏳ Loading model 3/3...";
+    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+
+    result.innerText = "✅ Models loaded!";
 }
 
 // LOAD STUDENT FACES
@@ -39,13 +44,13 @@ async function loadStudentFaces() {
     const labels = ["yash", "nikhil", "charan"];
     const labeledDescriptors = [];
 
-    // ✅ FIX: lower scoreThreshold (0.3) catches faces on lower-quality photos
     const options = new faceapi.TinyFaceDetectorOptions({
         inputSize: 320,
         scoreThreshold: 0.3
     });
 
     for (const label of labels) {
+        result.innerText = `⏳ Loading face: ${label}...`;
         try {
             const img = await faceapi.fetchImage(`./students/${label}.jpg`);
 
@@ -55,14 +60,13 @@ async function loadStudentFaces() {
                 .withFaceDescriptor();
 
             if (!detection) {
-                console.warn(`⚠️ No face found in ${label}.jpg — use a clear front-facing photo`);
+                console.warn(`⚠️ No face found in ${label}.jpg`);
                 continue;
             }
 
             labeledDescriptors.push(
                 new faceapi.LabeledFaceDescriptors(label, [detection.descriptor])
             );
-
             console.log(`✅ Loaded: ${label}`);
 
         } catch (err) {
@@ -86,7 +90,6 @@ async function startRecognition() {
 
     result.innerText = `✅ System ready (${labeledDescriptors.length} students). Look at the camera.`;
 
-    // ✅ FIX: videoWidth/videoHeight instead of video.width/video.height
     const displaySize = {
         width: video.videoWidth || video.width,
         height: video.videoHeight || video.height
@@ -101,7 +104,6 @@ async function startRecognition() {
     setInterval(async () => {
         if (video.readyState < 2 || video.paused) return;
 
-        // Recalculate each frame in case dimensions loaded late
         const size = {
             width: video.videoWidth || video.width,
             height: video.videoHeight || video.height
@@ -144,4 +146,4 @@ async function init() {
     startRecognition();
 }
 
-init();  
+init();
