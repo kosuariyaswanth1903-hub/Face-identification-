@@ -2,58 +2,52 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>DCME-B Face Identification</title>
-
+<title>Face Identification</title>
 <style>
-body{
-    text-align:center;
-    font-family:Arial;
-    background:#f0f0f0;
+body {
+    text-align: center;
+    font-family: Arial;
+    background: #f0f0f0;
 }
 
-.container{
-    position:relative;
-    display:inline-block;
+#video-container {
+    position: relative;
+    display: inline-block;
+    margin-top: 20px;
 }
 
-video{
-    border:3px solid black;
-    border-radius:8px;
+video {
+    border: 3px solid black;
+    border-radius: 8px;
+    display: block;
 }
 
-canvas{
-    position:absolute;
-    top:0;
-    left:0;
+#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
 }
 
-#result{
-    margin-top:20px;
-    font-size:22px;
-    font-weight:bold;
-    background:white;
-    padding:10px;
-    border-radius:8px;
-    display:inline-block;
+#result {
+    margin-top: 20px;
+    font-size: 22px;
+    font-weight: bold;
 }
 </style>
-
 </head>
-
 <body>
 
 <h2>DCME-B Face Identification</h2>
 
-<div class="container">
+<div id="video-container">
     <video id="video" width="480" height="360" autoplay muted playsinline></video>
-    <canvas id="overlay" width="480" height="360"></canvas>
+    <canvas id="overlay"></canvas>
 </div>
-
-<br><br>
 
 <h3 id="result">Starting camera...</h3>
 
-<script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script src="script.js"></script>
 
 </body>
