@@ -12,7 +12,7 @@ async function startCamera() {
             video.play();
         };
 
-        result.innerText = "Camera started. Loading models...";
+        result.innerText = "Camera started...";
     } catch (err) {
         result.innerText = "Camera permission denied";
         console.error(err);
@@ -30,14 +30,16 @@ async function loadModels() {
     result.innerText = "Models loaded. Loading student faces...";
 }
 
-// LOAD STUDENT FACES
+// LOAD STUDENT IMAGES
 async function loadStudentFaces() {
 
     const labels = ["yash", "nikhil", "charan"];
     const labeledDescriptors = [];
 
     for (const label of labels) {
+
         try {
+
             const img = await faceapi.fetchImage(`students/${label}.jpg`);
 
             const detection = await faceapi
@@ -46,13 +48,16 @@ async function loadStudentFaces() {
                 .withFaceDescriptor();
 
             if (!detection) {
-                console.log("No face in", label);
+                console.log("No face found in", label);
                 continue;
             }
 
-            labeledDescriptors.push(
-                new faceapi.LabeledFaceDescriptors(label, [detection.descriptor])
+            const faceDescriptors = new faceapi.LabeledFaceDescriptors(
+                label,
+                [detection.descriptor]
             );
+
+            labeledDescriptors.push(faceDescriptors);
 
         } catch (err) {
             console.log("Error loading", label);
@@ -76,7 +81,11 @@ async function startRecognition() {
 
     result.innerText = "System ready. Look at the camera.";
 
-    const displaySize = { width: video.width, height: video.height };
+    const displaySize = {
+        width: video.width,
+        height: video.height
+    };
+
     faceapi.matchDimensions(canvas, displaySize);
 
     setInterval(async () => {
@@ -86,14 +95,14 @@ async function startRecognition() {
             .withFaceLandmarks()
             .withFaceDescriptors();
 
-        const resized = faceapi.resizeResults(detections, displaySize);
+        const resizedDetections = faceapi.resizeResults(detections, displaySize);
 
         const ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         if (detections.length > 0) {
 
-            faceapi.draw.drawDetections(canvas, resized);
+            faceapi.draw.drawDetections(canvas, resizedDetections);
 
             const match = faceMatcher.findBestMatch(detections[0].descriptor);
 
@@ -107,7 +116,7 @@ async function startRecognition() {
             result.innerText = "👀 No face detected";
         }
 
-    }, 1000);
+    }, 300);
 }
 
 // START SYSTEM
