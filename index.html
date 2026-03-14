@@ -2,36 +2,25 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>DCME-B Face Identification</title>
+<title>Face Identification</title>
 
 <style>
 body{
-    text-align:center;
-    font-family:Arial;
-    background:#f0f0f0;
+text-align:center;
+font-family:Arial;
+background:#f0f0f0;
 }
 
 video{
-    border:3px solid black;
-    border-radius:8px;
-    margin-top:20px;
-}
-
-canvas{
-    position:absolute;
-    left:50%;
-    transform:translateX(-50%);
-    margin-top:20px;
+border:3px solid black;
+border-radius:8px;
+margin-top:20px;
 }
 
 #result{
-    margin-top:20px;
-    font-size:22px;
-    font-weight:bold;
-    background:white;
-    padding:10px;
-    border-radius:8px;
-    display:inline-block;
+margin-top:20px;
+font-size:22px;
+font-weight:bold;
 }
 </style>
 
@@ -41,15 +30,7 @@ canvas{
 
 <h2>DCME-B Face Identification</h2>
 
-<div style="position:relative; display:inline-block;">
-    
-    <video id="video" width="720" height="560" autoplay muted playsinline></video>
-    
-    <canvas id="overlay" width="720" height="560"></canvas>
-
-</div>
-
-<br><br>
+<video id="video" width="480" height="360" autoplay muted playsinline></video>
 
 <h3 id="result">Starting camera...</h3>
 
